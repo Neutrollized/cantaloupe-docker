@@ -1,5 +1,5 @@
 # README
-This repo shows how build and run a Cantaloupe (v5+) container image as there is [no official Docker image](https://cantaloupe-project.github.io/manual/5.0/getting-started.html#Docker) yet.
+This repo shows how build and run a Cantaloupe (v5+) container image as there is [no official Docker image](https://cantaloupe-project.github.io/manual/5.0/getting-started.html#Docker) yet.  It was based off of [MITLibraries/docker-cantaloupe](https://github.com/MITLibraries/docker-cantaloupe) and modified to accommodate for the changes in v5.x
 
 ## Building
 ```

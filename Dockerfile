@@ -11,11 +11,11 @@ VOLUME /imageroot
 # Update packages and install tools
 RUN apt-get update -qy && apt-get dist-upgrade -qy \
   && apt-get install -qy --no-install-recommends curl \
-     ffmpeg imagemagick libopenjp2-tools \
+     ffmpeg libopenjp2-tools \
      default-jdk unzip \
   && apt-get -qqy autoremove && apt-get -qqy autoclean
 
-# https://cantaloupe-project.github.io/manual/4.1/processors.html#TurboJpegProcessor
+# https://cantaloupe-project.github.io/manual/5.0/processors.html#TurboJpegProcessor
 RUN cd /tmp && apt-get install -qy cmake g++ make nasm \
   && curl --silent --fail -OL https://downloads.sourceforge.net/project/libjpeg-turbo/${LIBJPEGTURBO_VERSION}/libjpeg-turbo-${LIBJPEGTURBO_VERSION}.tar.gz \
   && tar -xpf libjpeg-turbo-${LIBJPEGTURBO_VERSION}.tar.gz \
@@ -33,7 +33,7 @@ RUN cd /tmp && apt-get install -qy cmake g++ make nasm \
   && ln -s /usr/lib/libturbojpeg.so /opt/libjpeg-turbo/lib/libturbojpeg.so \
   && cd /tmp && rm -Rf libjpeg-turbo-${LIBJPEGTURBO_VERSION}* \
   && apt-get purge -qy cmake g++ make nasm \
-  && apt-get autoremove -qy
+  && apt-get -qqy autoremove && apt-get -qqy autoclean
 
 # Run non privileged
 RUN adduser --system cantaloupe
