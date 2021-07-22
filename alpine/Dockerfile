@@ -1,5 +1,6 @@
-FROM debian:buster
+FROM alpine:3.13.5
 
+ENV OPENJDK_VERSION=11
 ENV LIBJPEGTURBO_VERSION=2.0.2
 ENV CANTALOUPE_VERSION=5.0.3
 ENV JAVA_MAX_HEAP=1g
@@ -9,15 +10,21 @@ EXPOSE 8182
 VOLUME /imageroot
 
 # Update packages and install tools
-RUN apt-get update -qy && apt-get dist-upgrade -qy \
-  && apt-get install -qy --no-install-recommends curl \
-     ffmpeg libopenjp2-tools \
-     default-jdk unzip \
-  && apt-get -qqy autoremove && apt-get -qqy autoclean
+RUN apk add --no-cache \
+    curl unzip \
+    ffmpeg openjpeg openjpeg-tools \
+    openjdk${OPENJDK_VERSION} \
+    msttcorefonts-installer fontconfig \
+  && update-ms-fonts
+
+# NOTE: need to set JAVA_HOME, otherwise it won't be able to find the javadoc binary
+ENV JAVA_HOME="/usr/lib/jvm/java-${OPENJDK_VERSION}-openjdk"
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
 
 # NOTE: can leave out this piece if you don't need the TurboJpegProcessor
 # https://cantaloupe-project.github.io/manual/5.0/processors.html#TurboJpegProcessor
-RUN cd /tmp && apt-get install -qy cmake g++ make nasm \
+RUN cd /tmp && apk add --no-cache --virtual .build-dependencies cmake g++ make nasm \
   && curl --silent --fail -OL https://downloads.sourceforge.net/project/libjpeg-turbo/${LIBJPEGTURBO_VERSION}/libjpeg-turbo-${LIBJPEGTURBO_VERSION}.tar.gz \
   && tar -xpf libjpeg-turbo-${LIBJPEGTURBO_VERSION}.tar.gz \
   && cd libjpeg-turbo-${LIBJPEGTURBO_VERSION} \
@@ -30,14 +37,11 @@ RUN cd /tmp && apt-get install -qy cmake g++ make nasm \
   -DWITH_JPEG8=1 \
   -DWITH_JAVA=1 \
   && make && make install \
-  && mkdir -p /opt/libjpeg-turbo/lib \
-  && ln -s /usr/lib/libturbojpeg.so /opt/libjpeg-turbo/lib/libturbojpeg.so \
-  && cd /tmp && rm -Rf libjpeg-turbo-${LIBJPEGTURBO_VERSION}* \
-  && apt-get purge -qy cmake g++ make nasm \
-  && apt-get -qqy autoremove && apt-get -qqy autoclean
+  && apk del .build-dependencies
 
 # Run non privileged
-RUN adduser --system cantaloupe
+RUN addgroup --system cantaloupe \
+  && adduser --system cantaloupe cantaloupe
 
 # Get and unpack Cantaloupe release archive
 RUN curl --silent --fail -OL https://github.com/cantaloupe-project/cantaloupe/releases/download/v${CANTALOUPE_VERSION}/cantaloupe-${CANTALOUPE_VERSION}.zip \
@@ -45,8 +49,7 @@ RUN curl --silent --fail -OL https://github.com/cantaloupe-project/cantaloupe/re
   && ln -s cantaloupe-${CANTALOUPE_VERSION} cantaloupe \
   && rm cantaloupe-${CANTALOUPE_VERSION}.zip \
   && mkdir -p /var/log/cantaloupe /var/cache/cantaloupe \
-  && chown -R cantaloupe /cantaloupe /var/log/cantaloupe /var/cache/cantaloupe \
-  && cp -rs /cantaloupe/deps/Linux-x86-64/* /usr/
+  && chown -R cantaloupe /cantaloupe /var/log/cantaloupe /var/cache/cantaloupe
 
 USER cantaloupe
 
